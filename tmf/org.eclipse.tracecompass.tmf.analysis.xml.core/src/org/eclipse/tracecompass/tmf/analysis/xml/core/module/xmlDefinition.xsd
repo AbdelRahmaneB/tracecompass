@@ -10,8 +10,8 @@
  * Contributors:
  *   Florian Wininger - Initial API and implementation
  *************************************************************************** -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-	attributeFormDefault="unqualified" elementFormDefault="qualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	attributeFormDefault="unqualified" elementFormDefault="qualified" >
 
 	<xs:include schemaLocation="xmlCommon.xsd" />
 	<xs:include schemaLocation="xmlStateProvider.xsd" />
@@ -35,6 +35,10 @@
 				<xs:element ref="extra" maxOccurs="unbounded" minOccurs="0" >
 					<xs:annotation>
 						<xs:documentation>A placeholder for additional functionalities</xs:documentation></xs:annotation></xs:element>
+				  <xs:element name="script" type="scriptBlock" maxOccurs="1" minOccurs="0">
+				    <xs:annotation>
+				      <xs:documentation>Define a new script block</xs:documentation></xs:annotation>
+				  </xs:element>
 			</xs:choice>
 		</xs:complexType>
 	</xs:element>
@@ -43,6 +47,23 @@
 
 	<xs:complexType name="extraType" abstract="true" >
 		<xs:sequence/>
+	</xs:complexType>
+
+	<!-- Should be placed in a separate file ! -->
+	<xs:complexType name="scriptBlock" mixed="true">
+		<xs:annotation>
+			<xs:documentation>Declares a script block that comprises functionalities accessible by any script statevalue in the XML file. It may be necessary to include the script in a CDATA section</xs:documentation></xs:annotation>
+	<!-- 		<xs:restriction base="xs:string" /> -->
+		<xs:attribute name="scriptEngine">
+			<xs:annotation>
+				<xs:documentation>Indicate which script engine to use</xs:documentation></xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+				<xs:enumeration value="nashorn">
+					<xs:annotation>
+						<xs:documentation>The value should be a JavaScript script</xs:documentation></xs:annotation></xs:enumeration></xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
 	</xs:complexType>
 
 </xs:schema>

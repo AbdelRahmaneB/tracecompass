@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.XmlScriptManager;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.module.TmfXmlStrings;
 
 /**
@@ -27,6 +28,8 @@ public class AnalysisCompilationData {
     private final Map<String, TmfXmlLocationCu> fLocations = new HashMap<>();
     private final Map<String, String> fDefinedValues = new HashMap<>();
     private final Map<String, TmfXmlMappingGroupCu> fMappingGroups = new HashMap<>();
+    private XmlScriptManager fXmlScriptManager;
+
 
     /**
      * Add a location compilation unit with a given ID to the analysis data
@@ -117,4 +120,13 @@ public class AnalysisCompilationData {
     public @Nullable TmfXmlMappingGroupCu getMappingGroup(String groupId) {
         return fMappingGroups.get(groupId);
     }
+
+    public @Nullable XmlScriptManager getXmlScriptManager() {
+        return fXmlScriptManager;
+    }
+
+    public void setXmlScriptManager(XmlScriptManager xmlScriptManager) {
+        fXmlScriptManager = xmlScriptManager;
+    }
+
 }

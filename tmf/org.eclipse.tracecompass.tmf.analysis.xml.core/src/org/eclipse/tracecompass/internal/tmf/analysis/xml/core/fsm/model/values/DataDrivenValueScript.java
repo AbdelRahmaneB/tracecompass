@@ -9,6 +9,7 @@
 
 package org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.model.values;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Map.Entry;
@@ -22,6 +23,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.model.DataDrivenScenarioInfo;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.module.IAnalysisDataContainer;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.XmlScriptManager;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 import org.eclipse.tracecompass.statesystem.core.statevalue.TmfStateValue;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
@@ -30,15 +32,17 @@ import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
  * A value that resolves to the result of a scripts
  *
  * @author Geneviève Bastien
- * @author Abdelrahmane Berhil
+ * @author Abderrahmane Berhil
  */
 public class DataDrivenValueScript extends DataDrivenValue {
 
     /** the default script engine */
     public static final String DEFAULT_SCRIPT_ENGINE = "nashorn"; //$NON-NLS-1$
     private final Map<String, DataDrivenValue> fValues;
-    private final String fScriptEngine;
+    private final String fScriptEngineName;
     private final String fScript;
+    private final XmlScriptManager fXmlScriptManager;
+
 
     /**
      * Constructor
@@ -53,14 +57,16 @@ public class DataDrivenValueScript extends DataDrivenValue {
      *            replace to keys at runtime
      * @param script
      *            The script to run
-     * @param scriptEngine
+     * @param scriptEngineName
      *            The script engine. By default, it is {@link #DEFAULT_SCRIPT_ENGINE} (javascript)
      */
-    public DataDrivenValueScript(@Nullable String mappingGroupId, ITmfStateValue.Type forcedType, Map<String, DataDrivenValue> values, String script, String scriptEngine) {
+    public DataDrivenValueScript(@Nullable String mappingGroupId, ITmfStateValue.Type forcedType, Map<String, DataDrivenValue> values,
+            String script, String scriptEngineName, XmlScriptManager xmlScriptManager) {
         super(mappingGroupId, forcedType);
-        fScriptEngine = !scriptEngine.isEmpty() ? scriptEngine : DEFAULT_SCRIPT_ENGINE;
+        fScriptEngineName = !scriptEngineName.isEmpty() ? scriptEngineName : DEFAULT_SCRIPT_ENGINE;
         fValues = values;
         fScript = script;
+        fXmlScriptManager = xmlScriptManager;
     }
 
     @Override
@@ -75,28 +81,17 @@ public class DataDrivenValueScript extends DataDrivenValue {
 
     private @Nullable Object executeScript(Function<DataDrivenValue, @Nullable Object> function) {
         Object result = null;
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName(fScriptEngine);
-        if (engine == null) {
-            Activator.logWarning("Unknown script engine: " + fScriptEngine); //$NON-NLS-1$
-            return null;
-        }
+        Map<String, Object> varValues = new HashMap<>();
 
         for (Entry<String, DataDrivenValue> entry : fValues.entrySet()) {
             String stateValueId = Objects.requireNonNull(entry.getKey());
             DataDrivenValue stateValue = Objects.requireNonNull(entry.getValue());
             Object value = function.apply(stateValue);
-            engine.put(stateValueId, value);
+            varValues.put(stateValueId, value);
         }
 
-        try {
-            result = engine.eval(fScript);
-        } catch (ScriptException e) {
-            Activator.logError("Script execution failed", e); //$NON-NLS-1$
-            return TmfStateValue.nullValue();
-        }
-
-        return result;
+        result = fXmlScriptManager.executeScript(fScript, fScriptEngineName, varValues);
+        return result != null ? result : TmfStateValue.nullValue();
     }
 
     @Override

@@ -84,14 +84,13 @@ public class TmfXmlStateProviderCu {
      *            The ID of the provider to build
      * @return The compilation unit corresponding to this state provider
      */
-    public static @Nullable TmfXmlStateProviderCu compile(Path file, String providerId) {
+    public static @Nullable TmfXmlStateProviderCu compile(Path file, String providerId, AnalysisCompilationData analysisData) {
         Element spEl = TmfXmlUtils.getElementInFile(file.toAbsolutePath().toString(), TmfXmlStrings.STATE_PROVIDER, providerId);
         if (spEl == null) {
             // TODO: Validation message here
             Activator.logError("XmlStateProvider: Cannot find state provider element in file " + file); //$NON-NLS-1$
             return null;
         }
-        AnalysisCompilationData analysisData = new AnalysisCompilationData();
 
         int version;
         try {

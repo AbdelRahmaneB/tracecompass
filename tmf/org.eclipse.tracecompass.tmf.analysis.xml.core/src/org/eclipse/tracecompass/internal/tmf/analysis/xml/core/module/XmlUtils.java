@@ -40,6 +40,7 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -61,6 +62,7 @@ import org.eclipse.tracecompass.tmf.analysis.xml.core.module.TmfXmlStrings;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.module.TmfXmlUtils;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 import org.osgi.framework.Bundle;
+import org.w3c.dom.CharacterData;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -546,6 +548,21 @@ public class XmlUtils {
         }
         return childElements;
     }
+
+    public static String getCDataFromElement(Element node) {
+        NodeList list = node.getChildNodes();
+        String data;
+
+        for(int i = 0; i < list.getLength(); i++){
+            if(list.item(i) instanceof CharacterData){
+                data = ((CharacterData) list.item(i)).getData();
+                if(data != null && (data = data.trim()).length() > 0) {
+                    return data;
+                }
+            }
+        }
+        return StringUtils.EMPTY;
+      }
 
     /**
      * Preload the built-in or enabled xml analyses output for the existing xml

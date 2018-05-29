@@ -20,9 +20,11 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.compile.AnalysisCompilationData;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.compile.TmfXmlStateProviderCu;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.module.DataDrivenAnalysisModule;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.Messages;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.XmlScriptManager;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.pattern.stateprovider.XmlPatternAnalysis;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModuleHelper;
@@ -66,6 +68,7 @@ public class TmfAnalysisModuleHelperXml implements IAnalysisModuleHelper, ITmfPr
     private final File fSourceFile;
     private final Element fSourceElement;
     private final XmlAnalysisModuleType fType;
+    private final XmlScriptManager fXmlScriptManager;
 
     /**
      * Constructor
@@ -77,10 +80,11 @@ public class TmfAnalysisModuleHelperXml implements IAnalysisModuleHelper, ITmfPr
      * @param type
      *            The type of analysis
      */
-    public TmfAnalysisModuleHelperXml(File xmlFile, Element node, XmlAnalysisModuleType type) {
+    public TmfAnalysisModuleHelperXml(File xmlFile, Element node, XmlAnalysisModuleType type, XmlScriptManager xmlScriptManager) {
         fSourceFile = xmlFile;
         fSourceElement = node;
         fType = type;
+        fXmlScriptManager = xmlScriptManager;
     }
 
     @Override
@@ -201,9 +205,14 @@ public class TmfAnalysisModuleHelperXml implements IAnalysisModuleHelper, ITmfPr
     public final @Nullable IAnalysisModule newModule(ITmfTrace trace) throws TmfAnalysisException {
         String analysisid = getId();
         IAnalysisModule module = null;
+
         switch (fType) {
         case STATE_SYSTEM:
-            TmfXmlStateProviderCu compile = TmfXmlStateProviderCu.compile(fSourceFile.toPath(), analysisid);
+            //TODO Should be passed to all modules !?
+            //Maybe its not a good idea to passe it in analysisData !
+            AnalysisCompilationData analysisData = new AnalysisCompilationData();
+            analysisData.setXmlScriptManager(fXmlScriptManager);
+            TmfXmlStateProviderCu compile = TmfXmlStateProviderCu.compile(fSourceFile.toPath(), analysisid, analysisData);
             if (compile == null) {
                 return null;
             }

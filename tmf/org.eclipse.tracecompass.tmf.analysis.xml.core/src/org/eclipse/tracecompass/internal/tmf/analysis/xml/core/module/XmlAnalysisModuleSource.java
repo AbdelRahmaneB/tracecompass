@@ -18,12 +18,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.model.values.DataDrivenValueScript;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.module.ITmfXmlSchemaParser;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.module.TmfAnalysisModuleHelperXml;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.module.TmfXmlStrings;
@@ -84,12 +87,18 @@ public class XmlAnalysisModuleSource implements IAnalysisModuleSource {
         try {
             Document doc = XmlUtils.getDocumentFromFile(xmlFile);
 
+            /* get Script Block */
+            NodeList scriptBlockNodes = doc.getElementsByTagName(TmfXmlStrings.SCRIPT_BLOCK);
+            Element scriptBlockNode = (Element) scriptBlockNodes.item(0);
+            XmlScriptManager xmlScriptManager = new XmlScriptManager(scriptBlockNode);
+            //TODO The manager should be recreated after the supp files are deleted
+
             /* get State Providers modules */
             NodeList stateproviderNodes = doc.getElementsByTagName(TmfXmlStrings.STATE_PROVIDER);
             for (int i = 0; i < stateproviderNodes.getLength(); i++) {
                 Element node = (Element) stateproviderNodes.item(i);
 
-                IAnalysisModuleHelper helper = new TmfAnalysisModuleHelperXml(xmlFile, node, XmlAnalysisModuleType.STATE_SYSTEM);
+                IAnalysisModuleHelper helper = new TmfAnalysisModuleHelperXml(xmlFile, node, XmlAnalysisModuleType.STATE_SYSTEM, xmlScriptManager);
                 fModules.add(helper);
             }
 
@@ -98,7 +107,7 @@ public class XmlAnalysisModuleSource implements IAnalysisModuleSource {
             for (int i = 0; i < patternNodes.getLength(); i++) {
                 Element node = (Element) patternNodes.item(i);
 
-                IAnalysisModuleHelper helper = new TmfAnalysisModuleHelperXml(xmlFile, node, XmlAnalysisModuleType.PATTERN);
+                IAnalysisModuleHelper helper = new TmfAnalysisModuleHelperXml(xmlFile, node, XmlAnalysisModuleType.PATTERN, xmlScriptManager);
                 fModules.add(helper);
             }
 

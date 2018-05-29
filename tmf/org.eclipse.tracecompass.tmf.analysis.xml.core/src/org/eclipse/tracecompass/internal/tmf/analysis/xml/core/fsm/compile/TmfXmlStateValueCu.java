@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.model.DataDrivenActionStateChange;
@@ -30,6 +33,7 @@ import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.model.values.
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.model.values.DataDrivenValueScript;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.model.values.DataDrivenValueSelf;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.fsm.model.values.DataDrivenValueStackPeek;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.XmlScriptManager;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue.Type;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.module.TmfXmlStrings;
@@ -112,14 +116,17 @@ public class TmfXmlStateValueCu implements IDataDrivenCompilationUnit {
 
         private final Map<String, TmfXmlStateValueCu> fMap;
         private final String fScript;
-        private final String fScriptEngine;
+        private final String fScriptEngineName;
+        private final XmlScriptManager fXmlScriptManager;
         private final @Nullable String fMappingGroupId;
         private final Type fForcedType;
 
-        StateValueScriptGenerator(Map<String, TmfXmlStateValueCu> list, String script, String scriptEngine, @Nullable String mappingGroup, Type forcedType) {
+        StateValueScriptGenerator(Map<String, TmfXmlStateValueCu> list, String script, String scriptEngineName,
+                XmlScriptManager xmlScriptManager, @Nullable String mappingGroup, Type forcedType) {
             fMap = list;
             fScript = script;
-            fScriptEngine = scriptEngine;
+            fScriptEngineName = scriptEngineName;
+            fXmlScriptManager = xmlScriptManager;
             fMappingGroupId = mappingGroup;
             fForcedType = forcedType;
         }
@@ -128,7 +135,7 @@ public class TmfXmlStateValueCu implements IDataDrivenCompilationUnit {
         public DataDrivenValue get() {
             Map<String, DataDrivenValue> values = new HashMap<>();
             fMap.entrySet().forEach(entry -> values.put(entry.getKey(), Objects.requireNonNull(entry.getValue()).generate()));
-            return new DataDrivenValueScript(fMappingGroupId, fForcedType, values, fScript, fScriptEngine);
+            return new DataDrivenValueScript(fMappingGroupId, fForcedType, values, fScript, fScriptEngineName, fXmlScriptManager);
         }
 
     }
@@ -338,6 +345,17 @@ public class TmfXmlStateValueCu implements IDataDrivenCompilationUnit {
             return new TmfXmlStateValueCu(new StateValueQueryGenerator(subAttribs, mappingGroupId, forcedType));
         }
         case TmfXmlStrings.TYPE_SCRIPT: {
+            XmlScriptManager xmlScriptManager = analysisData.getXmlScriptManager();
+            if (xmlScriptManager == null) {
+                Activator.logError("XmlScriptManager is undefined"); //$NON-NLS-1$
+                return null;
+            }
+            String inlineScript = getValueString(analysisData, valueEl);
+            if (inlineScript == null) {
+                Activator.logError("The script resolves to null"); //$NON-NLS-1$
+                return null;
+            }
+
             List<Element> childElements = TmfXmlUtils.getChildElements(valueEl, TmfXmlStrings.STATE_VALUE);
             Map<String, TmfXmlStateValueCu> values = new HashMap<>();
             for (Element subAttributeNode : childElements) {
@@ -349,16 +367,12 @@ public class TmfXmlStateValueCu implements IDataDrivenCompilationUnit {
                 }
                 values.put(valueId, subAttrib);
             }
-            String script = getValueString(analysisData, valueEl);
-            if (script == null) {
-                Activator.logError("The script resolves to null"); //$NON-NLS-1$
-                return null;
+
+            String scriptEngineName = valueEl.getAttribute(TmfXmlStrings.SCRIPT_ENGINE);
+            if (scriptEngineName.isEmpty()) {
+                scriptEngineName = DataDrivenValueScript.DEFAULT_SCRIPT_ENGINE;
             }
-            String scriptEngine = valueEl.getAttribute(TmfXmlStrings.SCRIPT_ENGINE);
-            if (scriptEngine.isEmpty()) {
-                scriptEngine = DataDrivenValueScript.DEFAULT_SCRIPT_ENGINE;
-            }
-            return new TmfXmlStateValueCu(new StateValueScriptGenerator(values, script, scriptEngine, mappingGroupId, forcedType));
+            return new TmfXmlStateValueCu(new StateValueScriptGenerator(values, inlineScript, scriptEngineName, xmlScriptManager, mappingGroupId, forcedType));
         }
         case TmfXmlStrings.STACK_PEEK: {
             // A stack peek is like a query at the top of the stack

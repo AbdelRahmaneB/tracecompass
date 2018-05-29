@@ -132,6 +132,7 @@ public interface TmfXmlStrings {
     String STATE_VALUE = "stateValue";
     String STATE_CHANGE = "stateChange";
     String ELEMENT_FIELD = "field";
+    String SCRIPT_BLOCK = "script";
 
     /* XML Condition strings */
     String IF = "if";
